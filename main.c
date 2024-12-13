@@ -14,7 +14,7 @@ void d3q19_test(int steps) {
     const int cx[19] = { 0,  1, -1,  0,  0,  0,  0,  1, -1,  1, -1,  1, -1,  0,  0,  0,  0,  1, -1};
     const int cy[19] = { 0,  0,  0,  1, -1,  0,  0,  1, -1, -1,  1,  0,  0,  1, -1,  1, -1,  1, -1};
     const int cz[19] = { 0,  0,  0,  0,  0,  1, -1,  0,  0,  0,  0,  1, -1,  1, -1, -1,  1,  0,  0};
-    double tau = 0.5; // Relaxation time
+    double tau = 0.6; // Relaxation time
     lbm_params lbm = {50, 50, 50, 3, 19, w, cx, cy, cz, 1.0, 3.0, 4.5, -1.5, tau};
 
     lbm_3d_loop(lbm, steps);
@@ -30,8 +30,9 @@ void d2q9_test(int steps) {
     lbm_2d_loop(lbm, steps);
 }
 
-int main() {
-    puts("running...");
-    d3q19_test(1000);
+int main(int argc, char* argv[]) {
+    int steps = atoi(argv[1]); 
+    printf("running %d steps", steps); 
+    d2q9_test(steps);
     return 0;
 }

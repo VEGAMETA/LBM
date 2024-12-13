@@ -84,6 +84,7 @@ void initialize_3d(lbm_params lbm, double ****f, double ***rho, double ****u) {
         for (int y = 0; y < lbm.NY; y++) {
             for (int z = 0; z < lbm.NZ; z++) {
                 rho[x][y][z] = 1.0; // Initial density
+                if (x > 40.0) rho[x][y][z] += 1.0;
                 u[x][y][z][0] = 0.0;
                 u[x][y][z][1] = 0.0;
                 u[x][y][z][2] = 0.0;
@@ -101,6 +102,7 @@ void initialize_2d(lbm_params lbm, double ***f, double **rho, double ***u) {
     for (int x = 0; x < lbm.NX; x++) {
         for (int y = 0; y < lbm.NY; y++) {
             rho[x][y] = 1.0; // Initial density
+            if (x > 40.0 || (x > 30.0 && y > 30.0)) rho[x][y] += 1.0;
             u[x][y][0] = 0.0; // Initial x-velocity
             u[x][y][1] = 0.0; // Initial y-velocity
 
@@ -143,67 +145,37 @@ double equilibrium_1d(lbm_params lbm, int k, double rho, double ux) {
     return lbm.w[k] * rho * (lbm.EQ_A + lbm.EQ_B * cu + lbm.EQ_C * cu * cu + lbm.EQ_D * usq);
 };
 
+void apply_face_3d(lbm_params lbm, double ****f, int fixed_coord, int fixed_value, int direction, int size1, int size2, const int *c1, const int *c2) {
+    #pragma omp parallel for collapse(3)
+    for (int i = 0; i < size1; i++) {
+        for (int j = 0; j < size2; j++) {
+            for (int k = 0; k < lbm.Q; k++) {
+                if (direction * c2[k] > 0) { 
+                    int opp_k;
+                    if (k == 0 && lbm.Q % 2 == 0) opp_k = 0;
+                    else if ((k % 2 == 0 && lbm.Q % 2 == 0) || (k % 2 == 1 && lbm.Q % 2 == 1)) opp_k = k + 1;
+                    else opp_k = k - 1;
+                    if (fixed_coord == 0) {
+                        f[fixed_value][i][j][k] = f[fixed_value][i][j][opp_k];
+                    } else if (fixed_coord == 1) {
+                        f[i][fixed_value][j][k] = f[i][fixed_value][j][opp_k];
+                    } else {
+                        f[i][j][fixed_value][k] = f[i][j][fixed_value][opp_k];
+                    }
+                }
+            }
+        }
+    }
+}
 
 void apply_boundary_conditions_3d_box(lbm_params lbm, double ****f) {
-    for (int x = 0; x < lbm.NX; x++) {
-        for (int y = 0; y < lbm.NY; y++) {
-            // Bottom face (Z=0)
-            for (int k = 0; k < 19; k++) {
-                if (lbm.cz[k] < 0) { // Opposite direction
-                    int opp_k = 18 - k;
-                    f[x][y][0][k] = f[x][y][0][opp_k];
-                }
-            }
-            // Top face (Z=NZ-1)
-            for (int k = 0; k < 19; k++) {
-                if (lbm.cz[k] > 0) { // Opposite direction
-                    int opp_k = 18 - k;
-                    f[x][y][lbm.NZ - 1][k] = f[x][y][lbm.NZ - 1][opp_k];
-                }
-            }
-        }
-    }
-
-    // Left and Right (X=0 and X=NX-1)
-    for (int y = 0; y < lbm.NY; y++) {
-        for (int z = 0; z < lbm.NZ; z++) {
-            // Left face (X=0)
-            for (int k = 0; k < 19; k++) {
-                if (lbm.cx[k] < 0) { // Opposite direction
-                    int opp_k = 18 - k;
-                    f[0][y][z][k] = f[0][y][z][opp_k];
-                }
-            }
-            // Right face (X=NX-1)
-            for (int k = 0; k < 19; k++) {
-                if (lbm.cx[k] > 0) { // Opposite direction
-                    int opp_k = 18 - k;
-                    f[lbm.NX - 1][y][z][k] = f[lbm.NX - 1][y][z][opp_k];
-                }
-            }
-        }
-    }
-
-    // Front and Back (Y=0 and Y=NY-1)
-    for (int x = 0; x < lbm.NX; x++) {
-        for (int z = 0; z < lbm.NZ; z++) {
-            // Front face (Y=0)
-            for (int k = 0; k < 19; k++) {
-                if (lbm.cy[k] < 0) { // Opposite direction
-                    int opp_k = 18 - k;
-                    f[x][0][z][k] = f[x][0][z][opp_k];
-                }
-            }
-            // Back face (Y=NY-1)
-            for (int k = 0; k < 19; k++) {
-                if (lbm.cy[k] > 0) { // Opposite direction
-                    int opp_k = 18 - k;
-                    f[x][lbm.NY - 1][z][k] = f[x][lbm.NY - 1][z][opp_k];
-                }
-            }
-        }
-    }
-};
+    apply_face_3d(lbm, f, 2, 0, -1, lbm.NX, lbm.NY, lbm.cx, lbm.cz);            // Bottom face (Z=0)
+    apply_face_3d(lbm, f, 2, lbm.NZ - 1, 1, lbm.NX, lbm.NY, lbm.cx, lbm.cz);    // Top face (Z=NZ-1)
+    apply_face_3d(lbm, f, 0, 0, -1, lbm.NY, lbm.NZ, lbm.cx, lbm.cy);            // Left face (X=0)
+    apply_face_3d(lbm, f, 0, lbm.NX - 1, 1, lbm.NY, lbm.NZ, lbm.cx, lbm.cy);    // Right face (X=NX-1)
+    apply_face_3d(lbm, f, 1, 0, -1, lbm.NX, lbm.NZ, lbm.cx, lbm.cy);            // Front face (Y=0)
+    apply_face_3d(lbm, f, 1, lbm.NY - 1, 1, lbm.NX, lbm.NZ, lbm.cx, lbm.cy);    // Back face (Y=NY-1)
+}
 
 void apply_boundary_conditions_2d_sandwich(lbm_params lbm, double ***f) {
     for (int x = 0; x < lbm.NX; x++) {
@@ -242,6 +214,8 @@ void collide_and_stream_3d(lbm_params lbm, double ****f, double ****f_new, doubl
                 u[x][y][z][0] /= rho[x][y][z];
                 u[x][y][z][1] /= rho[x][y][z];
                 u[x][y][z][2] /= rho[x][y][z];
+
+                //u[x][y][z][2] -= 9.8;
 
                 // Collision step
                 for (int k = 0; k < lbm.Q; k++) {
@@ -409,7 +383,7 @@ void lbm_3d_loop(lbm_params lbm, int steps) {
 
     for (int step = 0; step < steps; step++) {
         collide_and_stream_3d(lbm, f, f_new, rho, u);
-        apply_boundary_conditions_3d_box(lbm, f_new);
+        //apply_boundary_conditions_3d_box(lbm, f_new);
         swap_distributions_3d(lbm, f, f_new);
     }
 

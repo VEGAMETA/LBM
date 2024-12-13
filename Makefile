@@ -11,7 +11,6 @@ OBJ = $(SRC:%.c=$(BUILDDIR)/%.o)
 
 all: $(BUILDDIR) $(OBJ) $(TARGET)
 	rm -rf $(BUILDDIR) $(TARGET)
-	./$(TARGET)
 
 $(BUILDDIR):
 	mkdir -p $(BUILDDIR)
