@@ -1,25 +1,36 @@
+# Компилятор и флаги
 CC = gcc
 CFLAGS = -O3 -march=native -mtune=native -flto -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fno-stack-protector
-LDFLAGS = -Wl,--gc-sections -Wl,-s
+LDFLAGS = -Wl,--gc-sections -Wl,-s -L"D:\SDKs\raylib\lib" -lraylib -lopengl32 -lgdi32 -lwinmm
+
+# Пути
+INCDIR = ./lbm ./visualize "D:\SDKs\raylib\include"
+INCFLAGS = $(addprefix -I, $(INCDIR))
+
 SRCDIR = .
-INCDIR = ./lbm
 BUILDDIR = build
 TARGET = lbm_simulator
 
-SRC = $(SRCDIR)/main.c $(SRCDIR)/lbm/lbm.c
+# Файлы
+SRC = $(SRCDIR)/visualize/visualize_raylib.c $(SRCDIR)/main.c $(SRCDIR)/lbm/lbm.c 
 OBJ = $(SRC:%.c=$(BUILDDIR)/%.o)
 
-all: $(BUILDDIR) $(OBJ) $(TARGET)
-	rm -rf $(BUILDDIR) $(TARGET)
+# Правила
+all: $(BUILDDIR) $(TARGET)
+	./$(TARGET)
 
 $(BUILDDIR):
-	mkdir -p $(BUILDDIR)
-	mkdir -p $(BUILDDIR)/lbm
+	mkdir $(BUILDDIR)
+	mkdir $(BUILDDIR)\lbm
+	mkdir $(BUILDDIR)\visualize
 
 $(TARGET): $(OBJ)
-	$(CC) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(OBJ) $(LDFLAGS) -o $@
 
-$(BUILDDIR)/%.o: %.c | $(BUILDDIR)
-	$(CC) $(CFLAGS) -I$(INCDIR) -c $< -o $@
-	
-.PHONY: all
+$(BUILDDIR)/%.o: %.c
+	$(CC) $(CFLAGS) $(INCFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(BUILDDIR)
+
+.PHONY: all clean
