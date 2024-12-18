@@ -104,16 +104,15 @@ typedef struct lbm_parameters_1d
     double **u;
 } lbm_params_1d;
 
-lbm_params_3d initialize_3d(lbm_params_3d lbm);
+void initialize_3d(lbm_params_3d lbm);
 void initialize_2d(lbm_params_2d *lbm);
-lbm_params_1d initialize_1d(lbm_params_1d lbm);
+void initialize_1d(lbm_params_1d lbm);
 
 double equilibrium_3d(lbm_params_3d lbm, int k, double rho, double ux, double uy, double uz);
 double equilibrium_2d(lbm_params_2d lbm, int k, double rho, double ux, double uy);
 double equilibrium_1d(lbm_params_1d lbm, int k, double rho, double ux);
 
-void boundary(lbm_params_2d *lbm, int x, int y, const int *opposite, const int *c, int direction);
-void apply_box_boundaries(lbm_params_2d *lbm, int x0, int x1, int y0, int y1);
+void boundary(lbm_params_2d *lbm, int x0, int x1, int y0, int y1);
 
 void apply_boundary_conditions_3d_box(lbm_params_3d lbm);
 void apply_boundary_conditions_2d(lbm_params_2d *lbm);
@@ -126,10 +125,6 @@ void collide_and_stream_1d(lbm_params_1d lbm);
 void swap_distributions_3d(lbm_params_3d lbm);
 void swap_distributions_2d(lbm_params_2d lbm);
 void swap_distributions_1d(lbm_params_1d lbm);
-
-void write_to_file_3d(lbm_params_3d lbm);
-void write_to_file_2d(lbm_params_2d lbm);
-void write_to_file_1d(lbm_params_1d lbm);
 
 void lbm_3d_step(lbm_params_3d lbm);
 void lbm_2d_step(lbm_params_2d lbm);

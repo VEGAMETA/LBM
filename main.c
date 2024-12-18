@@ -27,7 +27,7 @@ void d2q9_test() {
     int opp[9] = {0, 3, 4, 1, 2, 7, 8, 5, 6};
     int opp_x[9] = {0, 3, 4, 1, 2, 6, 5, 8, 7};
     int opp_y[9] = {0, 3, 4, 1, 2, 8, 7, 6, 5};
-    double tau = 0.6;
+    double tau = 1.6;
     lbm_params_2d lbm = {600, 400, 3, 9, w, cx, cy, opp, opp_x, opp_y, 1.0, 3.0, 4.5, -1.5, tau};
     initialize_2d(&lbm);
     printf_s("lbm.rho[0][0]: %d", lbm.rho[0][0]);

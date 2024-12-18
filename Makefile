@@ -1,6 +1,6 @@
 # Компилятор и флаги
 CC = gcc
-CFLAGS = -O3 -march=native -mtune=native -flto -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fno-stack-protector
+CFLAGS = -O3 -std=c23 -march=native -mtune=native -flto -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fno-stack-protector
 LDFLAGS = -Wl,--gc-sections -Wl,-s -L"D:\SDKs\raylib\lib" -lraylib -lopengl32 -lgdi32 -lwinmm
 
 # Пути

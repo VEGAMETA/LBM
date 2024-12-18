@@ -1,71 +1,40 @@
 #include "lbm.h"
 
 double ****create_4d_array(int d1, int d2, int d3, int d4) {
-    double ****array = malloc(d1 * sizeof(double ***));
-    for (int i = 0; i < d1; i++) {
-        array[i] = malloc(d2 * sizeof(double **));
-        for (int j = 0; j < d2; j++) {
-            array[i][j] = malloc(d3 * sizeof(double *));
-            for (int k = 0; k < d3; k++) {
-                array[i][j][k] = malloc(d4 * sizeof(double));
-            }
-        }
-    }
+    double ****array = (double ****)malloc(d1 * sizeof(double ***));
+    for (int i = 0; i < d1; i++) array[i] = create_3d_array(d2, d3, d4);
     return array;
 }
 
 double ***create_3d_array(int d1, int d2, int d3) {
-    double ***array = malloc(d1 * sizeof(double **));
-    for (int i = 0; i < d1; i++) {
-        array[i] = malloc(d2 * sizeof(double *));
-        for (int j = 0; j < d2; j++) {
-            array[i][j] = malloc(d3 * sizeof(double));
-        }
-    }
+    double ***array = (double ***)malloc(d1 * sizeof(double **));
+    for (int i = 0; i < d1; i++) array[i] = create_2d_array(d2, d3);
     return array;
 }
 
 double **create_2d_array(int d1, int d2) {
-    double **array = malloc(d1 * sizeof(double *));
-    for (int i = 0; i < d1; i++) {
-        array[i] = malloc(d2 * sizeof(double));
-    }
+    double **array = (double **)malloc(d1 * sizeof(double *));
+    for (int i = 0; i < d1; i++) array[i] = create_1d_array(d2);
     return array;
 }
 
 double *create_1d_array(int d1) {
-    double *array = malloc(d1 * sizeof(double));
-    return array;
+    return (double *)malloc(d1 * sizeof(double));
 }
 
 
 void free_4d_array(double ****array, int d1, int d2, int d3) {
-    for (int i = 0; i < d1; i++) {
-        for (int j = 0; j < d2; j++) {
-            for (int k = 0; k < d3; k++) {
-                free(array[i][j][k]);
-            }
-            free(array[i][j]);
-        }
-        free(array[i]);
-    }
+    for (int i = 0; i < d1; i++) free_3d_array(array[i], d2, d3);
     free(array);
 }
 
 void free_3d_array(double ***array, int d1, int d2) {
-    for (int i = 0; i < d1; i++) {
-        for (int j = 0; j < d2; j++) {
-            free(array[i][j]);
-        }
-        free(array[i]);
-    }
+    for (int i = 0; i < d1; i++) free_2d_array(array[i], d2);
     free(array);
 }
 
 void free_2d_array(double **array, int d1) {
-    for (int i = 0; i < d1; i++) {
-        free(array[i]);
-    }
+    for (int i = 0; i < d1; i++) free_1d_array(array[i]);
     free(array);
 }
 
@@ -74,7 +43,7 @@ void free_1d_array(double *array) {
 }
 
 
-lbm_params_3d initialize_3d(lbm_params_3d lbm) {
+void initialize_3d(lbm_params_3d lbm) {
     double ****f = create_4d_array(lbm.NX, lbm.NY, lbm.NZ, lbm.Q);
     double ****f_new = create_4d_array(lbm.NX, lbm.NY, lbm.NZ, lbm.Q);
     double ***rho = create_3d_array(lbm.NX, lbm.NY, lbm.NZ);
@@ -101,7 +70,6 @@ lbm_params_3d initialize_3d(lbm_params_3d lbm) {
             }
         }
     }
-    return lbm;
 }
 
 void initialize_2d(lbm_params_2d *lbm) {
@@ -118,13 +86,22 @@ void initialize_2d(lbm_params_2d *lbm) {
 
     for (int x = 0; x < lbm->NX; x++) {
         for (int y = 0; y < lbm->NY; y++) {
-            lbm->rho[x][y] = 1.0;
-            lbm->rho[x][y] += 100*(((x-100)*(x-100) +  (y-250)*(y-250)) < 24000) || (x > 450 && y > 120 && y < 180); // Initial density
-            lbm->rho[x][y] *= 1 + !(250 > x && x > 150 && 395 > y && y > 220);
-            //if () lbm->rho[x][y] = 1.0;
-            lbm->u[x][y][0] = 0.; // Initial x-velocity
-            lbm->u[x][y][1] = 0.; // Initial y-velocity
+            lbm->rho[x][y] = 2.0;
+            lbm->rho[x][y] += 500*(((x-100)*(x-100) +  (y-250)*(y-250)) < 24000) || (x > 450 && y > 120 && y < 180); // Initial density
 
+            if ((x >= 50 && x <= 150 && y >= 220 && y <= 295) ||
+                (x >= 450 && x <= 550 && y >= 195 && y <= 220) ||
+                (x >= 150 && x <= 400 && y >= 50 && y <= 120) ||
+                (x >= 300 && x <= 350 && y >= 175 && y <= 350))
+            {
+                lbm->rho[x][y] = .0;
+            }
+            else
+            {
+                lbm->u[x][y][0] = .0; // Initial x-velocity
+                lbm->u[x][y][1] = .0; // Initial y-velocity
+            }
+            //if () lbm->rho[x][y] = 1.0;
             // Initialize equilibrium distribution
             for (int k = 0; k < lbm->Q; k++) {
                 lbm->f[x][y][k] = equilibrium_2d(*lbm, k, lbm->rho[x][y], lbm->u[x][y][0], lbm->u[x][y][1]);
@@ -133,7 +110,7 @@ void initialize_2d(lbm_params_2d *lbm) {
     }
 }
 
-lbm_params_1d initialize_1d(lbm_params_1d lbm) {
+void initialize_1d(lbm_params_1d lbm) {
     double **f = create_2d_array(lbm.NX, lbm.Q);
     double **f_new = create_2d_array(lbm.NX, lbm.Q);
     // Macroscopic quantities
@@ -154,7 +131,6 @@ lbm_params_1d initialize_1d(lbm_params_1d lbm) {
             lbm.f[x][k] = equilibrium_1d(lbm, k, lbm.rho[x], lbm.u[x][0]);
         }
     }
-    return lbm;
 }
 
 
@@ -167,7 +143,7 @@ double equilibrium_3d(lbm_params_3d lbm, int k, double rho, double ux, double uy
 double equilibrium_2d(lbm_params_2d lbm, int k, double rho, double ux, double uy) {
     double cu = lbm.cx[k] * ux + lbm.cy[k] * uy;
     double usq = ux * ux + uy * uy;
-    return lbm.w[k] * rho * (lbm.EQ_A + lbm.EQ_B * cu + lbm.EQ_C * cu * cu + lbm.EQ_D * usq);
+    return fmax(lbm.w[k] * rho * (lbm.EQ_A + lbm.EQ_B * cu + lbm.EQ_C * cu * cu + lbm.EQ_D * usq), 0.);
 };
 
 double equilibrium_1d(lbm_params_1d lbm, int k, double rho, double ux) {
@@ -175,6 +151,7 @@ double equilibrium_1d(lbm_params_1d lbm, int k, double rho, double ux) {
     double usq = ux * ux;
     return lbm.w[k] * rho * (lbm.EQ_A + lbm.EQ_B * cu + lbm.EQ_C * cu * cu + lbm.EQ_D * usq);
 };
+
 
 void apply_face_3d(lbm_params_3d lbm, int fixed_coord, int fixed_value, int direction, int size1, int size2, const int *c1, const int *c2) {
     #pragma omp parallel for collapse(3)
@@ -208,54 +185,34 @@ void apply_boundary_conditions_3d_box(lbm_params_3d lbm) {
     apply_face_3d(lbm, 1, lbm.NY - 1, 1, lbm.NX, lbm.NZ, lbm.cx, lbm.cy);    // Back face (Y=NY-1)
 }
 
-void boundary(lbm_params_2d *lbm, int x, int y,const int *opposite, const int *c, int direction) {
-    lbm->rho[x][y] = 0;
-    lbm->u[x][y][0] = 0;
-    lbm->u[x][y][1] = 0;
-    double *temp = (double *)malloc(lbm->Q * sizeof(double));
-    for (int q = 0; q < lbm->Q; q++) {
-        temp[q] = lbm->f[x][y][q];
+void boundary(lbm_params_2d *lbm, int x0, int x1, int y0, int y1) {
+    for (int x = x0 + 1; x < x1; x++){
+        for (int q = 0; q < lbm->Q; q++){
+            lbm->f_new[x][y0][lbm->opp[q]] = lbm->f[x][y0][q];
+            lbm->f_new[x][y1][lbm->opp[q]] = lbm->f[x][y1][q];
+        }
     }
-    for (int q = 0; q < lbm->Q; q++) {
-        lbm->f[x][y][q] = temp[opposite[q]];
-        lbm->rho[x][y] += lbm->f[x][y][q];
-        lbm->u[x][y][0] += lbm->cx[q] * lbm->f[x][y][q];
-        lbm->u[x][y][1] += lbm->cy[q] * lbm->f[x][y][q];
+    for (int y = y0 + 1; y < y1; y++){
+        for (int q = 0; q < lbm->Q; q++){
+            lbm->f_new[x0][y][lbm->opp_x[q]] = lbm->f[x0][y][q];
+            lbm->f_new[x1][y][lbm->opp_x[q]] = lbm->f[x1][y][q];
+        }
     }
-    free(temp);
-    lbm->u[x][y][0] /= lbm->rho[x][y];
-    lbm->u[x][y][1] /= lbm->rho[x][y];
-}
-
-void apply_inner_box_boundaries(lbm_params_2d *lbm, int x0, int x1, int y0, int y1) {
-    for (int y = y0; y < y1; y++) {
-            boundary(lbm, x0, y, lbm->opp_x, lbm->cx, -1); // right
-            boundary(lbm, x1 - 1, y, lbm->opp_x, lbm->cx, 1); // left
-    }
-    for (int x = x0; x < x1; x++) {
-            boundary(lbm, x, y0, lbm->opp_y, lbm->cy, -1); // bottom
-            boundary(lbm, x, y1 - 1, lbm->opp_y, lbm->cy, 1); // top
-    }
-}
-
-void apply_outer_box_boundaries(lbm_params_2d *lbm, int x0, int x1, int y0, int y1) {
-    for (int y = y0; y < y1; y++) {
-            boundary(lbm, x1 - 1, y, lbm->opp_x, lbm->cx, -1); // right
-            boundary(lbm, x0, y, lbm->opp_x, lbm->cx, 1); // left
-    }
-    for (int x = x0; x < x1; x++) {
-            boundary(lbm, x, y1 - 1, lbm->opp_y, lbm->cy, -1); // bottom
-            boundary(lbm, x, y0, lbm->opp_y, lbm->cy, 1); // top
+    
+    for (int q = 0; q < lbm->Q; q++){
+        lbm->f_new[x0][y0][lbm->opp[q]] = lbm->f[x0][y0][q];
+        lbm->f_new[x1][y1][lbm->opp[q]] = lbm->f[x1][y1][q];
+        lbm->f_new[x0][y1][lbm->opp[q]] = lbm->f[x0][y1][q];
+        lbm->f_new[x1][y0][lbm->opp[q]] = lbm->f[x1][y0][q];
     }
 }
 
 void apply_boundary_conditions_2d(lbm_params_2d *lbm) {
-    //apply_inner_box_boundaries(lbm, 150, 250, 220, 395);
-    //apply_outer_box_boundaries(lbm, 150, 250, 220, 395);
-    //apply_inner_box_boundaries(lbm, 0, lbm->NX, 0, lbm->NY);
-    //apply_inner_box_boundaries(lbm, 150, 300, 220, 395);
+    // boundary(lbm, 50, 150, 220, 295);
+    // boundary(lbm, 450, 550, 195, 220);
+    // boundary(lbm, 150, 400, 50, 120);
+    // boundary(lbm, 300, 350, 175, 350);
 }
-
 
 void apply_boundary_conditions_1d_ray(lbm_params_1d lbm) {
     for (int k = 0; k < lbm.Q; k++) {
@@ -314,25 +271,20 @@ void collide_and_stream_2d(lbm_params_2d lbm) {
     #pragma omp parallel for collapse(2)
     for (int x = 0; x < lbm.NX; x++) {
         for (int y = 0; y < lbm.NY; y++) {
-            // Compute macroscopic quantities
-            lbm.rho[x][y] = 0.0;
-            lbm.u[x][y][0] = 0.0;
-            lbm.u[x][y][1] = 0.0;
+            lbm.rho[x][y] = 0.;
+            lbm.u[x][y][0] = 0.;
+            lbm.u[x][y][1] = 0.;
             for (int k = 0; k < lbm.Q; k++) {
                 lbm.rho[x][y] += lbm.f[x][y][k];
                 lbm.u[x][y][0] += lbm.f[x][y][k] * lbm.cx[k];
                 lbm.u[x][y][1] += lbm.f[x][y][k] * lbm.cy[k];
             }
-            if (lbm.rho[x][y] == 0.0) {
-                lbm.u[x][y][0] /= 1e-10;
-                lbm.u[x][y][1] /= 1e-10;
-            }
-            else {
-                lbm.u[x][y][0] /= lbm.rho[x][y];
-                lbm.u[x][y][1] /= lbm.rho[x][y];
-            }
+            lbm.u[x][y][0] /= lbm.rho[x][y];
+            lbm.u[x][y][1] /= lbm.rho[x][y];
+            
 
             // Collision step
+            #pragma omp parallel for
             for (int k = 0; k < lbm.Q; k++) {
                 double feq = equilibrium_2d(lbm, k, lbm.rho[x][y], lbm.u[x][y][0], lbm.u[x][y][1]);
                 lbm.f[x][y][k] += (feq - lbm.f[x][y][k]) / lbm.tau;
@@ -341,14 +293,26 @@ void collide_and_stream_2d(lbm_params_2d lbm) {
     }
 
     // Streaming step
+    #pragma omp parallel for collapse(3)
     for (int x = 0; x < lbm.NX; x++) {
         for (int y = 0; y < lbm.NY; y++) {
             for (int k = 0; k < lbm.Q; k++) {
                 int xp = x + lbm.cx[k];
                 int yp = y + lbm.cy[k];
-
-                if (yp == -1 || yp == lbm.NY || xp == -1 || xp == lbm.NX) 
+                //if (xp >= lbm.NX) xp = 0;
+                //if (yp >= lbm.NY) yp = 0;
+                //if (xp < 0) xp = lbm.NX - 1;
+                //if (yp < 0) yp = lbm.NY - 1;
+                if (yp == -1 || yp == lbm.NY || xp == -1 || xp == lbm.NX)
                     lbm.f_new[x][y][lbm.opp[k]] = lbm.f[x][y][k];
+                else if ((xp >= 50 - 1 && xp <= 150 && yp >= 220 - 1 && yp <= 295) ||
+                        (xp >= 450 - 1 && xp <= 550 && yp >= 195 - 1 && yp <= 220) ||
+                        (xp >= 150 - 1 && xp <= 400 && yp >= 50 - 1 && yp <= 120) ||
+                        (xp >= 300 - 1 && xp <= 350 && yp >= 175 - 1 && yp <= 350)) {
+                    lbm.f_new[xp][yp][lbm.opp_x[k]] = lbm.f[xp][yp][k];
+                    lbm.f_new[x][y][lbm.opp[k]] = lbm.f[x][y][k];
+                    continue;
+                }
                 else lbm.f_new[xp][yp][k] = lbm.f[x][y][k];
             }
         }
@@ -417,39 +381,6 @@ void swap_distributions_1d(lbm_params_1d lbm){
 }
 
 
-void write_to_file_3d(lbm_params_3d lbm) {
-    FILE *file = fopen("density.dat", "w");
-    for (int x = 0; x < lbm.NX; x++) {
-        for (int y = 0; y < lbm.NY; y++) {
-            for (int z = 0; z < lbm.NZ; z++) {
-                fprintf(file, "%d %d %d %f\n", x, y, z, lbm.rho[x][y][z]);
-            }
-        }
-        fprintf(file, "\n");
-    }
-    fclose(file);
-}
-
-void write_to_file_2d(lbm_params_2d lbm) {
-    FILE *file = fopen("density.dat", "w");
-    for (int x = 0; x < lbm.NX; x++) {
-        for (int y = 0; y < lbm.NY; y++) {
-            fprintf(file, "%d %d %f\n", x, y, lbm.rho[x][y]);
-        }
-        fprintf(file, "\n");
-    }
-    fclose(file);
-}
-
-void write_to_file_1d(lbm_params_1d lbm) {
-    FILE *file = fopen("density.dat", "w");
-    for (int x = 0; x < lbm.NX; x++) {
-            fprintf(file, "%d %f\n", x, lbm.rho[x]);
-    }
-    fclose(file);
-}
-
-
 void lbm_3d_step(lbm_params_3d lbm) {
     collide_and_stream_3d(lbm);
     apply_boundary_conditions_3d_box(lbm);
@@ -462,12 +393,12 @@ void lbm_2d_step(lbm_params_2d lbm) {
     swap_distributions_2d(lbm);
 }
 
-
 void lbm_1d_step(lbm_params_1d lbm) {
     collide_and_stream_1d(lbm);
     apply_boundary_conditions_1d_ray(lbm);
     swap_distributions_1d(lbm);
 }
+
 
 void lbm_free_3d(lbm_params_3d lbm){
     free_3d_array(lbm.rho, lbm.NX, lbm.NY);

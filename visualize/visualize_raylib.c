@@ -4,26 +4,21 @@ void visualize_2d(lbm_params_2d lbm) {
     const int screenWidth = 1200;
     const int screenHeight = 800;
     InitWindow(screenWidth, screenHeight, "2D Grid Visualization");
-
     Camera3D camera = { 0 };
     camera.position = (Vector3){ 0.0f, 0.0f, -1000.0f };
     camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
     camera.fovy = 95.0f;
 
-    // Main loop
     while (!WindowShouldClose()) {
         lbm_2d_step(lbm);
-        printf("rho[0][0]: %f\n", lbm.rho[0][0]); // ??
-        // Draw
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        ClearBackground(BLACK);
         BeginMode3D(camera);
-        // // Draw grid and data points
         #pragma omp parallel for collapse(2)
         for (int x = 0; x < lbm.NX; x++) {
             for (int y = 0; y < lbm.NY; y++) {
-                Color color = ColorFromHSV((lbm.rho[x][y] - 1.) * 50.f+150.0f, 1.0f, 1.0f);
+                Color color = ColorFromHSV((lbm.rho[x][y] - 1.) * 100.f+100.0f, 1.0f, fmax(fmin(lbm.rho[x][y], 1.0f), 0.0f));
                 DrawRectangle(4*(x-lbm.NX/2), 4*(y-lbm.NY/2), 5, 5, color);
             }
         }
@@ -31,7 +26,6 @@ void visualize_2d(lbm_params_2d lbm) {
         DrawFPS(10, 10);
         EndDrawing();
     }
-
     CloseWindow();
 };
 
