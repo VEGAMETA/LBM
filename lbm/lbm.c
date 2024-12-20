@@ -87,7 +87,7 @@ void initialize_2d(lbm_params_2d *lbm) {
     for (int x = 0; x < lbm->NX; x++) {
         for (int y = 0; y < lbm->NY; y++) {
             lbm->rho[x][y] = 2.0;
-            lbm->rho[x][y] += 500*(((x-100)*(x-100) +  (y-250)*(y-250)) < 24000) || (x > 450 && y > 120 && y < 180); // Initial density
+            lbm->rho[x][y] += 1.*(((x-100)*(x-100) +  (y-250)*(y-250)) < 24000) || (x > 450 && y > 120 && y < 180); // Initial density
 
             if ((x >= 50 && x <= 150 && y >= 220 && y <= 295) ||
                 (x >= 450 && x <= 550 && y >= 195 && y <= 220) ||
@@ -98,8 +98,8 @@ void initialize_2d(lbm_params_2d *lbm) {
             }
             else
             {
-                lbm->u[x][y][0] = .0; // Initial x-velocity
-                lbm->u[x][y][1] = .0; // Initial y-velocity
+                lbm->u[x][y][0] = 0.;
+                lbm->u[x][y][1] = .0;
             }
             //if () lbm->rho[x][y] = 1.0;
             // Initialize equilibrium distribution
@@ -143,7 +143,7 @@ double equilibrium_3d(lbm_params_3d lbm, int k, double rho, double ux, double uy
 double equilibrium_2d(lbm_params_2d lbm, int k, double rho, double ux, double uy) {
     double cu = lbm.cx[k] * ux + lbm.cy[k] * uy;
     double usq = ux * ux + uy * uy;
-    return fmax(lbm.w[k] * rho * (lbm.EQ_A + lbm.EQ_B * cu + lbm.EQ_C * cu * cu + lbm.EQ_D * usq), 0.);
+    return fmin(fmax(lbm.w[k] * rho * (lbm.EQ_A + lbm.EQ_B * cu + lbm.EQ_C * cu * cu + lbm.EQ_D * usq), 0.00001), 7.);
 };
 
 double equilibrium_1d(lbm_params_1d lbm, int k, double rho, double ux) {
@@ -272,15 +272,21 @@ void collide_and_stream_2d(lbm_params_2d lbm) {
     for (int x = 0; x < lbm.NX; x++) {
         for (int y = 0; y < lbm.NY; y++) {
             lbm.rho[x][y] = 0.;
-            lbm.u[x][y][0] = 0.;
-            lbm.u[x][y][1] = 0.;
             for (int k = 0; k < lbm.Q; k++) {
                 lbm.rho[x][y] += lbm.f[x][y][k];
-                lbm.u[x][y][0] += lbm.f[x][y][k] * lbm.cx[k];
-                lbm.u[x][y][1] += lbm.f[x][y][k] * lbm.cy[k];
+                // lbm.u[x][y][0] += lbm.f[x][y][k] * lbm.cx[k];
+                // lbm.u[x][y][1] += lbm.f[x][y][k] * lbm.cy[k];
             }
-            lbm.u[x][y][0] /= lbm.rho[x][y];
-            lbm.u[x][y][1] /= lbm.rho[x][y];
+            lbm.u[x][y][0] = lbm.f[x][y][1] - lbm.f[x][y][3] + lbm.f[x][y][5] - lbm.f[x][y][7] + lbm.f[x][y][8] - lbm.f[x][y][6];
+            lbm.u[x][y][1] = lbm.f[x][y][2] - lbm.f[x][y][4] + lbm.f[x][y][5] - lbm.f[x][y][7] - lbm.f[x][y][8] + lbm.f[x][y][6];
+            if (lbm.rho[x][y] <= 0.){
+                lbm.rho[x][y] = 0.;
+                lbm.u[x][y][0] = lbm.u[x][y][1] = 10.;
+            }
+            else{
+                lbm.u[x][y][0] /= lbm.rho[x][y];
+                lbm.u[x][y][1] /= lbm.rho[x][y];
+            }
             
 
             // Collision step
@@ -288,6 +294,7 @@ void collide_and_stream_2d(lbm_params_2d lbm) {
             for (int k = 0; k < lbm.Q; k++) {
                 double feq = equilibrium_2d(lbm, k, lbm.rho[x][y], lbm.u[x][y][0], lbm.u[x][y][1]);
                 lbm.f[x][y][k] += (feq - lbm.f[x][y][k]) / lbm.tau;
+                lbm.f[x][y][k] = fmax(lbm.f[x][y][k], 0.);
             }
         }
     }
@@ -297,19 +304,21 @@ void collide_and_stream_2d(lbm_params_2d lbm) {
     for (int x = 0; x < lbm.NX; x++) {
         for (int y = 0; y < lbm.NY; y++) {
             for (int k = 0; k < lbm.Q; k++) {
-                int xp = x + lbm.cx[k];
-                int yp = y + lbm.cy[k];
+
                 //if (xp >= lbm.NX) xp = 0;
                 //if (yp >= lbm.NY) yp = 0;
                 //if (xp < 0) xp = lbm.NX - 1;
                 //if (yp < 0) yp = lbm.NY - 1;
+
+                int xp = x + lbm.cx[k];
+                int yp = y + lbm.cy[k];
                 if (yp == -1 || yp == lbm.NY || xp == -1 || xp == lbm.NX)
                     lbm.f_new[x][y][lbm.opp[k]] = lbm.f[x][y][k];
                 else if ((xp >= 50 - 1 && xp <= 150 && yp >= 220 - 1 && yp <= 295) ||
                         (xp >= 450 - 1 && xp <= 550 && yp >= 195 - 1 && yp <= 220) ||
                         (xp >= 150 - 1 && xp <= 400 && yp >= 50 - 1 && yp <= 120) ||
                         (xp >= 300 - 1 && xp <= 350 && yp >= 175 - 1 && yp <= 350)) {
-                    lbm.f_new[xp][yp][lbm.opp_x[k]] = lbm.f[xp][yp][k];
+                    lbm.f_new[xp][yp][lbm.opp[k]] = lbm.f[xp][yp][k];
                     lbm.f_new[x][y][lbm.opp[k]] = lbm.f[x][y][k];
                     continue;
                 }

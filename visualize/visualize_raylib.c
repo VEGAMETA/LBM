@@ -12,6 +12,7 @@ void visualize_2d(lbm_params_2d lbm) {
 
     while (!WindowShouldClose()) {
         lbm_2d_step(lbm);
+        printf_s("lbm.rho[100][300]: %f\n", lbm.rho[100][300]);
         BeginDrawing();
         ClearBackground(BLACK);
         BeginMode3D(camera);
