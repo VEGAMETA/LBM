@@ -1,9 +1,36 @@
 #include "visualize_raylib.h"
 
+void visualize_1d(lbm_params_1d lbm) {
+    const int screenWidth = 1200;
+    const int screenHeight = 800;
+    InitWindow(screenWidth, screenHeight, "1D LBM Visualization");
+    Camera3D camera = { 0 };
+    camera.position = (Vector3){ 0.0f, 0.0f, -1000.0f };
+    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
+    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+    camera.fovy = 95.0f;
+    SetTargetFPS(5);
+    while (!WindowShouldClose()) {
+        lbm_1d_step(lbm);
+        printf_s("lbm.rho[lbm.NX - 2]: %f\n", lbm.rho[lbm.NX - 2]);
+        BeginDrawing(); 
+        ClearBackground(BLACK);
+        BeginMode3D(camera);
+        #pragma omp parallel for collapse(2)
+        for (int x = 0; x < lbm.NX; x++) {
+            Color color = ColorFromHSV((lbm.rho[x] - 1.) * 100.f+100.0f, 1.0f, clamp(lbm.rho[x] - 1., 0.0f, 1.0f));
+            DrawRectangle((-4*x) + lbm.NX * 2, 0, 4, 350, color);
+        }
+        EndMode3D();
+        DrawFPS(10, 10);
+        EndDrawing();
+    }
+}
+
 void visualize_2d(lbm_params_2d lbm) {
     const int screenWidth = 1200;
     const int screenHeight = 800;
-    InitWindow(screenWidth, screenHeight, "2D Grid Visualization");
+    InitWindow(screenWidth, screenHeight, "2D LBM Visualization");
     Camera3D camera = { 0 };
     camera.position = (Vector3){ 0.0f, 0.0f, -1000.0f };
     camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
@@ -12,15 +39,14 @@ void visualize_2d(lbm_params_2d lbm) {
 
     while (!WindowShouldClose()) {
         lbm_2d_step(lbm);
-        printf_s("lbm.rho[100][300]: %f\n", lbm.rho[100][300]);
         BeginDrawing();
         ClearBackground(BLACK);
         BeginMode3D(camera);
         #pragma omp parallel for collapse(2)
         for (int x = 0; x < lbm.NX; x++) {
             for (int y = 0; y < lbm.NY; y++) {
-                Color color = ColorFromHSV((lbm.rho[x][y] - 1.) * 100.f+100.0f, 1.0f, fmax(fmin(lbm.rho[x][y], 1.0f), 0.0f));
-                DrawRectangle(4*(x-lbm.NX/2), 4*(y-lbm.NY/2), 5, 5, color);
+                Color color = ColorFromHSV((lbm.rho[x][y] - 1.) * 100.f+100.0f, 1.0f, clamp(lbm.rho[x][y] - 1., 0.0f, 1.0f));
+                DrawRectangle((-4*x)+lbm.NX*2, (-4*y)+lbm.NY*2, 5, 5, color);
             }
         }
         EndMode3D();
@@ -43,7 +69,6 @@ void visualize_3d(lbm_params_3d lbm) {
     camera.fovy = 45.0f;
 
     // Data array
-    static float rho[GRID_SIZE_X][GRID_SIZE_Y][GRID_SIZE_Z];
     //generate_3d_data(rho);
 
     // Main loop

@@ -4,7 +4,7 @@ CFLAGS = -O3 -std=c23 -march=native -mtune=native -flto -ffunction-sections -fda
 LDFLAGS = -Wl,--gc-sections -Wl,-s -L"D:\SDKs\raylib\lib" -lraylib -lopengl32 -lgdi32 -lwinmm
 
 # Пути
-INCDIR = ./lbm ./visualize "D:\SDKs\raylib\include"
+INCDIR = ./include "D:\SDKs\raylib\include"
 INCFLAGS = $(addprefix -I, $(INCDIR))
 
 SRCDIR = .
@@ -12,7 +12,10 @@ BUILDDIR = build
 TARGET = lbm_simulator
 
 # Файлы
-SRC = $(SRCDIR)/visualize/visualize_raylib.c $(SRCDIR)/main.c $(SRCDIR)/lbm/lbm.c 
+SRC = $(SRCDIR)/src/utils.c 
+SRC += $(SRCDIR)/src/lbm_3d.c $(SRCDIR)/src/lbm_2d.c $(SRCDIR)/src/lbm_1d.c 
+SRC += $(SRCDIR)/src/visualize_raylib.c 
+SRC += $(SRCDIR)/main.c
 OBJ = $(SRC:%.c=$(BUILDDIR)/%.o)
 
 # Правила
@@ -21,8 +24,7 @@ all: $(BUILDDIR) $(TARGET)
 
 $(BUILDDIR):
 	mkdir $(BUILDDIR)
-	mkdir $(BUILDDIR)\lbm
-	mkdir $(BUILDDIR)\visualize
+	mkdir $(BUILDDIR)\src
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) $(LDFLAGS) -o $@
