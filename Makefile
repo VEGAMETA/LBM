@@ -1,30 +1,51 @@
-# Компилятор и флаги
-CC = gcc
-CFLAGS = -O3 -std=c23 -march=native -mtune=native -flto -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fno-stack-protector
-LDFLAGS = -Wl,--gc-sections -Wl,-s -L"D:\SDKs\raylib\lib" -lraylib -lopengl32 -lgdi32 -lwinmm
+CC = clang
 
-# Пути
-INCDIR = ./include "D:\SDKs\raylib\include"
+CFLAGS = -std=c23 -O3 -DNDEBUG 
+CFLAGS += -fopenmp -march=native -mtune=native -flto -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fno-stack-protector
+
+LDFLAGS = -Wl,--gc-sections -Wl,-s
+LDFLAGS += -lraylib -lopengl32 -lgdi32 -lwinmm -ljpeg -lzlib -lpng -lOpenCL
+
+LDDIR = ./lib
+LDDIR += "D:\SDKs\OpenCL\lib"
+LDDIR += "D:\SDKs\raylib\lib"
+LDDIR += "D:\SDKs\libjpeg\lib" # libjpeg binary dll is nesessary
+LDDIR += "D:\SDKs\zlib\lib"
+LDDIR += "D:\SDKs\libpng\lib"
+
+INCDIR = ./include
+INCDIR += "D:\SDKs\OpenCL\include"
+INCDIR += "D:\SDKs\raylib\include"
+INCDIR += "D:\SDKs\libjpeg\include"
+INCDIR += "D:\SDKs\zlib\include"
+INCDIR += "D:\SDKs\libpng\include"
+
+LDFLAGS += $(addprefix -L, $(LDDIR))
 INCFLAGS = $(addprefix -I, $(INCDIR))
 
 SRCDIR = .
 BUILDDIR = build
-TARGET = lbm_simulator
+TARGET = lbm
 
-# Файлы
-SRC = $(SRCDIR)/src/utils.c 
-SRC += $(SRCDIR)/src/lbm_3d.c $(SRCDIR)/src/lbm_2d.c $(SRCDIR)/src/lbm_1d.c 
-SRC += $(SRCDIR)/src/visualize_raylib.c 
+SRC =
+SRC += $(SRCDIR)/src/lbm/utils.c
+SRC += $(SRCDIR)/src/lbm/lbm_3d.c $(SRCDIR)/src/lbm/lbm_2d.c $(SRCDIR)/src/lbm/lbm_1d.c 
+SRC += $(SRCDIR)/src/visualization/visualize.c
+SRC += $(SRCDIR)/src/misc/images_handler.c
 SRC += $(SRCDIR)/main.c
+
 OBJ = $(SRC:%.c=$(BUILDDIR)/%.o)
 
-# Правила
+
 all: $(BUILDDIR) $(TARGET)
-	./$(TARGET)
+	./$(TARGET) "./test2.png"
 
 $(BUILDDIR):
 	mkdir $(BUILDDIR)
 	mkdir $(BUILDDIR)\src
+	mkdir $(BUILDDIR)\src\lbm
+	mkdir $(BUILDDIR)\src\visualization
+	mkdir $(BUILDDIR)\src\misc
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) $(LDFLAGS) -o $@
@@ -35,4 +56,7 @@ $(BUILDDIR)/%.o: %.c
 clean:
 	rm -rf $(BUILDDIR)
 
-.PHONY: all clean
+test:
+	./$(TARGET) "./test.png"
+
+.PHONY: all clean test
